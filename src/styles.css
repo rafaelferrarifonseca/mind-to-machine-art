@@ -161,9 +161,10 @@
   padding: 0.55rem 0.75rem;
   font-size: 0.875rem;
   outline: none;
-}
-@utility input {
-  &:focus { border-color: var(--color-accent); box-shadow: 0 0 0 1px var(--color-accent); }
+  &:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent);
+  }
 }
 
 /* Minimal markdown styling for assistant messages */
