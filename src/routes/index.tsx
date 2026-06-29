@@ -5,8 +5,8 @@ import { ScaleIcon, ShieldCheckIcon, FileSearchIcon, EyeIcon } from "lucide-reac
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "IA-RF • Ribeiro Fialho Advogados" },
-      { name: "description", content: "Sistema proprietário de IA jurídica do Ribeiro Fialho — parametrizada, auditável e em conformidade com LGPD." },
+      { title: "IA-RF • XPTO Advogados" },
+      { name: "description", content: "Sistema proprietário de IA jurídica do XPTO Advogados — parametrizada, auditável e em conformidade com LGPD." },
     ],
   }),
   component: Index,
@@ -23,7 +23,7 @@ function Index() {
             </div>
             <div>
               <div className="font-serif text-xl font-semibold leading-none">IA-RF</div>
-              <div className="text-xs text-muted-foreground">Ribeiro Fialho Advogados</div>
+              <div className="text-xs text-muted-foreground">XPTO Advogados</div>
             </div>
           </div>
           <Link
@@ -81,7 +81,7 @@ function Index() {
 
       <footer className="border-t border-border">
         <div className="mx-auto max-w-6xl px-6 py-6 text-xs text-muted-foreground">
-          IA-RF • Sistema proprietário Ribeiro Fialho Advogados • Uso interno
+          IA-RF • Sistema proprietário XPTO Advogados • Uso interno
         </div>
       </footer>
     </div>

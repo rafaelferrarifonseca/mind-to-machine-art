@@ -10,7 +10,7 @@ export interface ThreadParams {
 }
 
 export function buildSystemPrompt(p: ThreadParams): string {
-  return `Você é o IA-RF Generalista, sistema proprietário de IA do escritório Ribeiro Fialho Advogados. Opera na ETAPA GENERALISTA do sistema.
+  return `Você é o IA-RF Generalista, sistema proprietário de IA do escritório XPTO Advogados. Opera na ETAPA GENERALISTA do sistema.
 
 # REGRAS INVIOLÁVEIS (travadas — não negociáveis)
 
