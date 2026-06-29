@@ -55,7 +55,7 @@ function AuthPage() {
           </div>
           <div>
             <div className="font-serif text-lg font-semibold leading-none">IA-RF</div>
-            <div className="text-xs opacity-70">Ribeiro Fialho Advogados</div>
+            <div className="text-xs opacity-70">XPTO Advogados</div>
           </div>
         </Link>
         <div className="max-w-md">
@@ -86,7 +86,7 @@ function AuthPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="mt-1.5 w-full rounded-sm border border-input bg-card px-3 py-2.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-                placeholder="nome@ribeirofialho.adv.br"
+                placeholder="nome@xpto.adv.br"
               />
             </div>
             <div>

@@ -81,7 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Teste" },
       { name: "description", content: "Sistema proprietário de inteligência artificial jurídica do escritório XPTO  — Etapa Generalista." },
-      { name: "author", content: "Ribeiro Fialho Advogados" },
+      { name: "author", content: "XPTO Advogados" },
       { property: "og:title", content: "Teste" },
       { property: "og:description", content: "Sistema proprietário de inteligência artificial jurídica do escritório XPTO  — Etapa Generalista." },
       { property: "og:type", content: "website" },
