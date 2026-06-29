@@ -81,7 +81,7 @@ function Index() {
 
       <footer className="border-t border-border">
         <div className="mx-auto max-w-6xl px-6 py-6 text-xs text-muted-foreground">
-          IA-RF • Sistema proprietário XPTO Advogados • Uso interno
+          XPTO • Sistema proprietário XPTO Advogados • Uso interno
         </div>
       </footer>
     </div>
