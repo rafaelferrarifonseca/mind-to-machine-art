@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { createThread, deleteThread, listThreads } from "@/lib/threads.functions";
+import type { z } from "zod";
 import { ScaleIcon, PlusIcon, LogOutIcon, TrashIcon, FileTextIcon, ShieldAlertIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -39,7 +40,7 @@ function AppLayout() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const createMut = useMutation({
-    mutationFn: (data: Parameters<typeof create>[0]["data"]) => create({ data }),
+    mutationFn: (data: NewThreadData) => create({ data }),
     onSuccess: (row) => {
       queryClient.invalidateQueries({ queryKey: ["threads"] });
       setModalOpen(false);
@@ -138,10 +139,28 @@ function AppLayout() {
         <Outlet />
       </main>
 
-      {modalOpen && <NewThreadModal onClose={() => setModalOpen(false)} onCreate={(d) => createMut.mutate(d)} pending={createMut.isPending} />}
+      {modalOpen && (
+        <NewThreadModal
+          onClose={() => setModalOpen(false)}
+          onCreate={(d) => createMut.mutate(d)}
+          pending={createMut.isPending}
+        />
+      )}
     </div>
   );
 }
+
+type NewThreadData = {
+  title?: string;
+  area: "publico" | "tributario" | "civel" | "trabalhista";
+  natureza: "contencioso" | "consultivo" | "tributario";
+  polo: string;
+  objetivo: string;
+  publico: string;
+  sigilo: boolean;
+  jurisdicao?: string | null;
+  premissas?: string | null;
+};
 
 function NewThreadModal({
   onClose,
@@ -149,7 +168,7 @@ function NewThreadModal({
   pending,
 }: {
   onClose: () => void;
-  onCreate: (data: Parameters<typeof createThread>[0]["data"]) => void;
+  onCreate: (data: NewThreadData) => void;
   pending: boolean;
 }) {
   const [form, setForm] = useState({
