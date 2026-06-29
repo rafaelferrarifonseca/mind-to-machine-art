@@ -79,14 +79,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "IA-RF • Ribeiro Fialho Advogados" },
-      { name: "description", content: "Sistema proprietário de inteligência artificial jurídica do escritório Ribeiro Fialho Advogados — Etapa Generalista." },
+      { title: "Teste" },
+      { name: "description", content: "Sistema proprietário de inteligência artificial jurídica do escritório XPTO  — Etapa Generalista." },
       { name: "author", content: "Ribeiro Fialho Advogados" },
-      { property: "og:title", content: "IA-RF • Ribeiro Fialho Advogados" },
-      { property: "og:description", content: "IA proprietária parametrizada, com governança, supervisão humana e trilha de auditoria — em conformidade com LGPD e o Plano Nacional da OAB." },
+      { property: "og:title", content: "Teste" },
+      { property: "og:description", content: "Sistema proprietário de inteligência artificial jurídica do escritório XPTO  — Etapa Generalista." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Teste" },
+      { name: "twitter:description", content: "Sistema proprietário de inteligência artificial jurídica do escritório XPTO  — Etapa Generalista." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/75a76d67-b9f7-409b-96a5-ceceec4cd528/id-preview-4cc82b1c--d3182b2b-6e85-4178-9353-494076062a5c.lovable.app-1782762844948.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/75a76d67-b9f7-409b-96a5-ceceec4cd528/id-preview-4cc82b1c--d3182b2b-6e85-4178-9353-494076062a5c.lovable.app-1782762844948.png" },
     ],
     links: [
       {
