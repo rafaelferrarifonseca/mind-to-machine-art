@@ -1,7 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import type { UIMessage } from "ai";
+import type { Json } from "@/integrations/supabase/types";
+
+export type StoredMessage = {
+  id: string;
+  role: "user" | "assistant" | "system";
+  parts: Json;
+};
 
 const CreateThreadSchema = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -80,10 +86,10 @@ export const getThread = createServerFn({ method: "POST" })
       .order("created_at", { ascending: true });
     if (mErr) throw new Error(mErr.message);
 
-    const messages: UIMessage[] = (msgs ?? []).map((m) => ({
+    const messages: StoredMessage[] = (msgs ?? []).map((m) => ({
       id: m.id,
-      role: m.role as UIMessage["role"],
-      parts: m.parts as UIMessage["parts"],
+      role: m.role as StoredMessage["role"],
+      parts: m.parts,
     }));
     return { thread, messages };
   });
