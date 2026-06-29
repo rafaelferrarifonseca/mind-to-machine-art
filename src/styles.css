@@ -152,3 +152,30 @@
     letter-spacing: -0.01em;
   }
 }
+
+@utility input {
+  width: 100%;
+  border-radius: 0.125rem;
+  border: 1px solid var(--color-input);
+  background: var(--color-background);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  outline: none;
+}
+@utility input {
+  &:focus { border-color: var(--color-accent); box-shadow: 0 0 0 1px var(--color-accent); }
+}
+
+/* Minimal markdown styling for assistant messages */
+.prose { line-height: 1.65; }
+.prose p { margin: 0.5rem 0; }
+.prose h1, .prose h2, .prose h3 { font-family: var(--font-serif); font-weight: 600; margin: 1rem 0 0.5rem; }
+.prose h1 { font-size: 1.35rem; }
+.prose h2 { font-size: 1.15rem; }
+.prose h3 { font-size: 1rem; }
+.prose ul, .prose ol { padding-left: 1.25rem; margin: 0.5rem 0; }
+.prose li { margin: 0.2rem 0; }
+.prose strong { font-weight: 600; }
+.prose em { font-style: italic; }
+.prose code { background: var(--color-muted); padding: 0.1rem 0.3rem; border-radius: 0.2rem; font-size: 0.85em; }
+.prose blockquote { border-left: 3px solid var(--color-accent); padding-left: 0.75rem; color: var(--color-muted-foreground); margin: 0.75rem 0; }
