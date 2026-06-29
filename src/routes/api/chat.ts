@@ -3,7 +3,7 @@ import { buildSystemPrompt, type ThreadParams } from "@/lib/system-prompt";
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 type Body = { messages?: UIMessage[]; threadId?: string };
 
@@ -62,7 +62,7 @@ export const Route = createFileRoute("/api/chat")({
             thread_id: threadId,
             user_id: userId,
             role: "user",
-            parts: lastUser.parts as unknown as object,
+            parts: lastUser.parts as unknown as Json,
           });
           await supabase.from("audit_log").insert({
             user_id: userId,
@@ -78,7 +78,7 @@ export const Route = createFileRoute("/api/chat")({
         const result = streamText({
           model,
           system: buildSystemPrompt(params),
-          messages: convertToModelMessages(messages),
+          messages: await convertToModelMessages(messages),
         });
 
         return result.toUIMessageStreamResponse({
@@ -90,7 +90,7 @@ export const Route = createFileRoute("/api/chat")({
               thread_id: threadId,
               user_id: userId,
               role: "assistant",
-              parts: assistant.parts as unknown as object,
+              parts: assistant.parts as unknown as Json,
             });
             await supabase.from("audit_log").insert({
               user_id: userId,
