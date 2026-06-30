@@ -1,7 +1,7 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { getThread } from "@/lib/threads.functions";
 import {
@@ -10,6 +10,10 @@ import {
   saveDossie,
   setThreadStatus,
 } from "@/lib/generalista.functions";
+import {
+  sendEspecialistaMessage,
+  clearEspecialistaThread,
+} from "@/lib/especialista.functions";
 import { EMPTY_DOSSIE, type Dossie } from "@/lib/dossie-schema";
 import {
   ShieldAlertIcon,
@@ -26,6 +30,10 @@ import {
   GavelIcon,
   RefreshCwIcon,
   DownloadIcon,
+  SendIcon,
+  Trash2Icon,
+  UserIcon,
+  BotIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -139,7 +147,11 @@ function ThreadView() {
           )}
 
           {thread.status === "em_analise" && (
-            <EspecialistaPlaceholder />
+            <EspecialistaChat
+              threadId={threadId}
+              messages={q.data.messages}
+              area={thread.area}
+            />
           )}
         </div>
       </div>
