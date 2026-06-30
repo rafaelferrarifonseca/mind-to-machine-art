@@ -331,7 +331,7 @@ function NewThreadModal({
   const MAX_BYTES = 20 * 1024 * 1024;
   const MAX_FILES = 10;
 
-  async function handleFiles(files: FileList | null) {
+  async function handleFiles(files: File[]) {
     if (!files || files.length === 0) return;
     const { data: userData } = await supabase.auth.getUser();
     const uid = userData.user?.id;
@@ -340,7 +340,7 @@ function NewThreadModal({
       return;
     }
     const remaining = MAX_FILES - uploads.length;
-    const incoming = Array.from(files).slice(0, remaining);
+    const incoming = files.slice(0, remaining);
     if (files.length > remaining) toast.error(`Máximo de ${MAX_FILES} arquivos.`);
     for (const file of incoming) {
       if (file.size > MAX_BYTES) {
