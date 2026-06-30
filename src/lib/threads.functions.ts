@@ -11,14 +11,16 @@ export type StoredMessage = {
 
 const CreateThreadSchema = z.object({
   title: z.string().min(1).max(200).optional(),
+  cliente: z.string().min(1).max(200).optional().nullable(),
   area: z.enum(["publico", "tributario", "civel", "trabalhista"]),
-  natureza: z.enum(["contencioso", "consultivo", "tributario"]),
-  polo: z.string().min(1).max(200),
-  objetivo: z.string().min(1).max(500),
-  publico: z.string().min(1).max(200),
+  natureza: z.enum(["contencioso", "consultivo", "tributario"]).optional().nullable(),
+  polo: z.string().max(200).optional().nullable(),
+  objetivo: z.string().max(500).optional().nullable(),
+  publico: z.string().max(200).optional().nullable(),
   sigilo: z.boolean().default(false),
   jurisdicao: z.string().max(200).optional().nullable(),
   premissas: z.string().max(2000).optional().nullable(),
+  raw_input: z.string().max(60000).optional().nullable(),
 });
 
 export const createThread = createServerFn({ method: "POST" })
@@ -26,19 +28,25 @@ export const createThread = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => CreateThreadSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const fallbackTitle = data.cliente
+      ? `${data.cliente} • ${data.area}`
+      : `${data.area}${data.natureza ? " • " + data.natureza : ""}`;
     const { data: row, error } = await supabase
       .from("threads")
       .insert({
         user_id: userId,
-        title: data.title ?? `${data.area} • ${data.natureza}`,
+        title: data.title ?? fallbackTitle,
+        cliente: data.cliente ?? null,
         area: data.area,
-        natureza: data.natureza,
-        polo: data.polo,
-        objetivo: data.objetivo,
-        publico: data.publico,
+        natureza: data.natureza ?? null,
+        polo: data.polo ?? null,
+        objetivo: data.objetivo ?? null,
+        publico: data.publico ?? null,
         sigilo: data.sigilo,
         jurisdicao: data.jurisdicao ?? null,
         premissas: data.premissas ?? null,
+        raw_input: data.raw_input ?? null,
+        status: "em_tratamento",
       })
       .select()
       .single();
@@ -47,7 +55,7 @@ export const createThread = createServerFn({ method: "POST" })
       user_id: userId,
       thread_id: row.id,
       action: "thread.created",
-      metadata: { area: data.area, natureza: data.natureza },
+      metadata: { area: data.area, cliente: data.cliente ?? null },
     });
     return row;
   });
@@ -58,7 +66,7 @@ export const listThreads = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("threads")
-      .select("id,title,area,natureza,updated_at")
+      .select("id,title,cliente,area,status,updated_at")
       .eq("user_id", userId)
       .order("updated_at", { ascending: false });
     if (error) throw new Error(error.message);
