@@ -1,16 +1,17 @@
 import { z } from "zod";
 
 export const DossieSchema = z.object({
-  resumo: z.string().describe("Resumo executivo do caso em 2 a 4 frases"),
-  fatos: z.string().describe("Narrativa cronológica dos fatos relevantes, em markdown"),
+  resumo: z.string().default("").describe("Resumo executivo do caso em 2 a 4 frases"),
+  fatos: z.string().default("").describe("Narrativa cronológica dos fatos relevantes, em markdown"),
   partes: z
     .array(
       z.object({
         nome: z.string(),
         polo: z.string().describe("autor, réu, terceiro, consulente, etc"),
-        observacao: z.string().optional(),
+        observacao: z.string().nullable().optional(),
       }),
     )
+    .default([])
     .describe("Partes identificadas e seus polos"),
   pedidos_teses: z
     .array(
@@ -19,6 +20,7 @@ export const DossieSchema = z.object({
         descricao: z.string(),
       }),
     )
+    .default([])
     .describe("Pedidos formulados e teses jurídicas iniciais"),
   linha_tempo: z
     .array(
@@ -27,17 +29,23 @@ export const DossieSchema = z.object({
         evento: z.string(),
       }),
     )
+    .default([])
     .describe("Movimentações ou eventos processuais relevantes em ordem"),
   riscos: z
     .array(
       z.object({
-        nivel: z.enum(["alto", "medio", "baixo"]),
+        nivel: z
+          .string()
+          .transform((v) => v.toLowerCase().trim())
+          .pipe(z.enum(["alto", "medio", "baixo"])),
         descricao: z.string(),
       }),
     )
+    .default([])
     .describe("Riscos, fragilidades e pontos sensíveis"),
   alertas: z
     .array(z.string())
+    .default([])
     .describe("Pontos de atenção: prazos, sigilo, lacunas informacionais"),
 });
 

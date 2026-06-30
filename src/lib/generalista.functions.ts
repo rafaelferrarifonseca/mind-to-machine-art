@@ -101,7 +101,11 @@ Devolva o dossiê estruturado conforme o schema. Não invente. Use "alertas" par
             },
           ],
         })
-      : await generateObject({ model, schema: DossieSchema, prompt: textPrompt });
+      : await generateObject({
+          model,
+          schema: DossieSchema,
+          prompt: textPrompt,
+        });
   return object;
 }
 
