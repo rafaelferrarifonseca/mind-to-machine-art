@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateObject } from "ai";
+import { generateObject, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
@@ -28,6 +28,43 @@ function buildContext(thread: {
 }
 
 type Attachment = { path: string; name: string; mime: string; size: number };
+
+function extractJsonText(raw: string): string | null {
+  let cleaned = raw
+    .replace(/^```json\s*/im, "")
+    .replace(/^```\s*/im, "")
+    .replace(/```\s*$/im, "")
+    .trim();
+
+  if (cleaned.startsWith("{") && cleaned.endsWith("}")) return cleaned;
+
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  if (start === -1 || end <= start) return null;
+  return cleaned.slice(start, end + 1);
+}
+
+function normalizeDossieCandidate(value: unknown): Dossie {
+  const candidate = value && typeof value === "object" ? value : {};
+  return DossieSchema.parse(candidate);
+}
+
+function dossieFromText(text: string | undefined, fallbackAlert: string): Dossie {
+  const parsedJson = text ? extractJsonText(text) : null;
+  if (parsedJson) {
+    try {
+      return normalizeDossieCandidate(JSON.parse(parsedJson));
+    } catch (error) {
+      console.warn("Falha ao reparar JSON do dossiê", error);
+    }
+  }
+
+  return normalizeDossieCandidate({
+    resumo: "",
+    fatos: text?.trim() || "",
+    alertas: [fallbackAlert],
+  });
+}
 
 async function buildAttachmentParts(
   supabase: any,
@@ -89,24 +126,44 @@ ${opts.rawInput || "(nenhum material textual fornecido — verificar anexos)"}${
 Devolva o dossiê estruturado conforme o schema. Não invente. Use "alertas" para registrar lacunas. Considere também os documentos anexados a seguir.`;
 
   const attachmentParts = opts.attachmentParts ?? [];
-  const { object } =
-    attachmentParts.length > 0
-      ? await generateObject({
-          model,
-          schema: DossieSchema,
-          messages: [
-            {
-              role: "user",
-              content: [{ type: "text", text: textPrompt }, ...attachmentParts] as any,
-            },
-          ],
-        })
-      : await generateObject({
-          model,
-          schema: DossieSchema,
-          prompt: textPrompt,
-        });
-  return object;
+  const generationOptions = {
+    model,
+    schema: DossieSchema,
+    schemaName: "DossieGeneralista",
+    schemaDescription: "Dossiê jurídico estruturado em JSON válido, sem markdown.",
+    experimental_repairText: async ({ text }: { text: string }) => extractJsonText(text),
+  };
+
+  try {
+    const { object } =
+      attachmentParts.length > 0
+        ? await generateObject({
+            ...generationOptions,
+            messages: [
+              {
+                role: "user",
+                content: [{ type: "text", text: textPrompt }, ...attachmentParts] as any,
+              },
+            ],
+          })
+        : await generateObject({
+            ...generationOptions,
+            prompt: textPrompt,
+          });
+    return normalizeDossieCandidate(object);
+  } catch (error) {
+    if (NoObjectGeneratedError.isInstance(error)) {
+      console.warn("Resposta da IA fora do schema; salvando fallback estruturado", {
+        finishReason: error.finishReason,
+        cause: error.cause instanceof Error ? error.cause.message : String(error.cause),
+      });
+      return dossieFromText(
+        error.text,
+        "O tratamento prévio foi concluído parcialmente porque a resposta automática veio fora do formato esperado. Revise o material e solicite refinamento, se necessário.",
+      );
+    }
+    throw error;
+  }
 }
 
 const RunSchema = z.object({ threadId: z.string().uuid() });
