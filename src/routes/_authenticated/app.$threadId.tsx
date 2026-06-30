@@ -25,6 +25,7 @@ import {
   FileTextIcon,
   GavelIcon,
   RefreshCwIcon,
+  DownloadIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -110,6 +111,7 @@ function ThreadView() {
     <div className="flex h-full flex-col">
       <ThreadHeader
         thread={thread}
+        dossie={dossie}
         onArchive={() => statusMut.mutate("arquivado")}
         onUseAI={() => statusMut.mutate("em_analise")}
         onMarkTreated={() => statusMut.mutate("tratado")}
@@ -147,6 +149,7 @@ function ThreadView() {
 
 function ThreadHeader({
   thread,
+  dossie,
   onArchive,
   onUseAI,
   onMarkTreated,
@@ -154,6 +157,7 @@ function ThreadHeader({
   reRunPending,
 }: {
   thread: any;
+  dossie: Dossie;
   onArchive: () => void;
   onUseAI: () => void;
   onMarkTreated: () => void;
@@ -202,6 +206,20 @@ function ThreadHeader({
         >
           <RefreshCwIcon className={`h-3 w-3 ${reRunPending ? "animate-spin" : ""}`} />
           Reprocessar
+        </button>
+        <button
+          onClick={() => downloadDossie(thread, dossie, "md")}
+          className="flex items-center gap-1.5 rounded-sm border border-border bg-card px-2.5 py-1 text-xs hover:bg-secondary"
+          title="Baixar dossiê em Markdown"
+        >
+          <DownloadIcon className="h-3 w-3" /> .md
+        </button>
+        <button
+          onClick={() => downloadDossie(thread, dossie, "json")}
+          className="flex items-center gap-1.5 rounded-sm border border-border bg-card px-2.5 py-1 text-xs hover:bg-secondary"
+          title="Baixar dossiê em JSON"
+        >
+          <DownloadIcon className="h-3 w-3" /> .json
         </button>
         <button
           onClick={onMarkTreated}
