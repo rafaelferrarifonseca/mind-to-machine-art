@@ -25,6 +25,7 @@ import {
   FileTextIcon,
   GavelIcon,
   RefreshCwIcon,
+  DownloadIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -110,6 +111,7 @@ function ThreadView() {
     <div className="flex h-full flex-col">
       <ThreadHeader
         thread={thread}
+        dossie={dossie}
         onArchive={() => statusMut.mutate("arquivado")}
         onUseAI={() => statusMut.mutate("em_analise")}
         onMarkTreated={() => statusMut.mutate("tratado")}
@@ -147,6 +149,7 @@ function ThreadView() {
 
 function ThreadHeader({
   thread,
+  dossie,
   onArchive,
   onUseAI,
   onMarkTreated,
@@ -154,6 +157,7 @@ function ThreadHeader({
   reRunPending,
 }: {
   thread: any;
+  dossie: Dossie;
   onArchive: () => void;
   onUseAI: () => void;
   onMarkTreated: () => void;
@@ -202,6 +206,20 @@ function ThreadHeader({
         >
           <RefreshCwIcon className={`h-3 w-3 ${reRunPending ? "animate-spin" : ""}`} />
           Reprocessar
+        </button>
+        <button
+          onClick={() => downloadDossie(thread, dossie, "md")}
+          className="flex items-center gap-1.5 rounded-sm border border-border bg-card px-2.5 py-1 text-xs hover:bg-secondary"
+          title="Baixar dossiê em Markdown"
+        >
+          <DownloadIcon className="h-3 w-3" /> .md
+        </button>
+        <button
+          onClick={() => downloadDossie(thread, dossie, "json")}
+          className="flex items-center gap-1.5 rounded-sm border border-border bg-card px-2.5 py-1 text-xs hover:bg-secondary"
+          title="Baixar dossiê em JSON"
+        >
+          <DownloadIcon className="h-3 w-3" /> .json
         </button>
         <button
           onClick={onMarkTreated}
@@ -561,4 +579,73 @@ function areaLabel(a: string) {
   return (
     { publico: "Público", tributario: "Tributário", civel: "Cível", trabalhista: "Trabalhista" } as Record<string, string>
   )[a] ?? a;
+}
+
+function slugify(s: string) {
+  return (s || "dossie")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 60) || "dossie";
+}
+
+function dossieToMarkdown(thread: any, d: Dossie) {
+  const lines: string[] = [];
+  lines.push(`# ${thread.title}`);
+  const meta = [
+    thread.cliente && `**Cliente:** ${thread.cliente}`,
+    `**Área:** ${areaLabel(thread.area)}`,
+    thread.natureza && `**Natureza:** ${thread.natureza}`,
+    thread.polo && `**Polo:** ${thread.polo}`,
+    thread.jurisdicao && `**Jurisdição:** ${thread.jurisdicao}`,
+    `**Status:** ${thread.status}`,
+    thread.sigilo && `**Sigilo:** sim`,
+  ].filter(Boolean);
+  if (meta.length) lines.push("", meta.join("  \n"));
+  if (thread.objetivo) lines.push("", `> Objetivo: ${thread.objetivo}`);
+  if (d.resumo) lines.push("", "## Resumo", "", d.resumo);
+  if (d.alertas?.length) {
+    lines.push("", "## Alertas e lacunas", "");
+    d.alertas.forEach((a) => lines.push(`- ${a}`));
+  }
+  if (d.partes?.length) {
+    lines.push("", "## Partes", "");
+    d.partes.forEach((p) =>
+      lines.push(`- **${p.nome}** — ${p.polo}${p.observacao ? ` · ${p.observacao}` : ""}`)
+    );
+  }
+  if (d.fatos) lines.push("", "## Fatos", "", d.fatos);
+  if (d.pedidos_teses?.length) {
+    lines.push("", "## Pedidos e teses", "");
+    d.pedidos_teses.forEach((p, i) =>
+      lines.push(`${i + 1}. **${p.titulo}** — ${p.descricao}`)
+    );
+  }
+  if (d.linha_tempo?.length) {
+    lines.push("", "## Linha do tempo", "");
+    d.linha_tempo.forEach((e) => lines.push(`- \`${e.data}\` — ${e.evento}`));
+  }
+  if (d.riscos?.length) {
+    lines.push("", "## Riscos", "");
+    d.riscos.forEach((r) => lines.push(`- **[${r.nivel.toUpperCase()}]** ${r.descricao}`));
+  }
+  lines.push("", "---", `_Gerado em ${new Date().toLocaleString("pt-BR")} — XPTO Advogados_`);
+  return lines.join("\n");
+}
+
+function downloadDossie(thread: any, d: Dossie, fmt: "md" | "json") {
+  const content =
+    fmt === "md" ? dossieToMarkdown(thread, d) : JSON.stringify({ thread, dossie: d }, null, 2);
+  const mime = fmt === "md" ? "text/markdown;charset=utf-8" : "application/json;charset=utf-8";
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `dossie-${slugify(thread.cliente || thread.title)}.${fmt}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
