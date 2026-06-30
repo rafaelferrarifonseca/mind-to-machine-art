@@ -1,7 +1,7 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { getThread } from "@/lib/threads.functions";
 import {
@@ -10,6 +10,10 @@ import {
   saveDossie,
   setThreadStatus,
 } from "@/lib/generalista.functions";
+import {
+  sendEspecialistaMessage,
+  clearEspecialistaThread,
+} from "@/lib/especialista.functions";
 import { EMPTY_DOSSIE, type Dossie } from "@/lib/dossie-schema";
 import {
   ShieldAlertIcon,
@@ -26,6 +30,10 @@ import {
   GavelIcon,
   RefreshCwIcon,
   DownloadIcon,
+  SendIcon,
+  Trash2Icon,
+  UserIcon,
+  BotIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -139,7 +147,11 @@ function ThreadView() {
           )}
 
           {thread.status === "em_analise" && (
-            <EspecialistaPlaceholder />
+            <EspecialistaChat
+              threadId={threadId}
+              messages={q.data.messages}
+              area={thread.area}
+            />
           )}
         </div>
       </div>
@@ -480,6 +492,181 @@ function EspecialistaPlaceholder() {
       <div className="mt-3 inline-flex items-center gap-1.5 rounded-sm bg-card px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
         em breve
       </div>
+    </div>
+  );
+}
+
+function EspecialistaChat({
+  threadId,
+  messages,
+  area,
+}: {
+  threadId: string;
+  messages: Array<{ id: string; role: string; parts: any }>;
+  area: string;
+}) {
+  const queryClient = useQueryClient();
+  const send = useServerFn(sendEspecialistaMessage);
+  const clear = useServerFn(clearEspecialistaThread);
+  const [text, setText] = useState("");
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const sendMut = useMutation({
+    mutationFn: (content: string) => send({ data: { threadId, content } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["thread", threadId] });
+      setText("");
+      setTimeout(() => inputRef.current?.focus(), 50);
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
+  });
+
+  const clearMut = useMutation({
+    mutationFn: () => clear({ data: { threadId } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["thread", threadId] });
+      toast.success("Conversa reiniciada");
+    },
+  });
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages.length, sendMut.isPending]);
+
+  function submit() {
+    const t = text.trim();
+    if (!t || sendMut.isPending) return;
+    sendMut.mutate(t);
+  }
+
+  return (
+    <div className="mt-6 flex flex-col rounded-sm border border-accent/40 bg-card">
+      <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+        <div className="flex items-center gap-2 font-serif text-sm font-semibold">
+          <SparklesIcon className="h-4 w-4 text-accent" />
+          IA Especialista — {areaLabel(area)}
+        </div>
+        <button
+          onClick={() => {
+            if (confirm("Reiniciar a conversa com a Especialista?")) clearMut.mutate();
+          }}
+          disabled={clearMut.isPending || messages.length === 0}
+          className="flex items-center gap-1 rounded-sm border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-secondary disabled:opacity-40"
+        >
+          <Trash2Icon className="h-3 w-3" /> Reiniciar
+        </button>
+      </header>
+
+      <div
+        ref={scrollerRef}
+        className="max-h-[60vh] min-h-[200px] space-y-4 overflow-y-auto px-4 py-4"
+      >
+        {messages.length === 0 && !sendMut.isPending && (
+          <div className="rounded-sm border border-dashed border-border bg-background p-4 text-sm text-muted-foreground">
+            O dossiê tratado e os parâmetros da matéria já foram carregados como contexto.
+            Comece descrevendo o que você quer (por exemplo: <em>"proponha estratégias viáveis"</em>,
+            <em> "minute uma contestação focada em prescrição"</em>, ou <em>"valide a tese de incompetência"</em>).
+            A Especialista sempre valida a tese antes de redigir a minuta.
+          </div>
+        )}
+        {messages.map((m) => (
+          <ChatBubble key={m.id} role={m.role} text={partsToText(m.parts)} />
+        ))}
+        {sendMut.isPending && (
+          <ChatBubble role="assistant" text="…pensando…" pending />
+        )}
+      </div>
+
+      <div className="border-t border-border p-3">
+        <div className="flex items-end gap-2">
+          <textarea
+            ref={inputRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            disabled={sendMut.isPending}
+            rows={3}
+            placeholder="Pergunte à Especialista… (Ctrl/⌘+Enter envia)"
+            className="input flex-1 resize-y text-sm"
+          />
+          <button
+            onClick={submit}
+            disabled={sendMut.isPending || !text.trim()}
+            className="flex items-center gap-1.5 rounded-sm bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+          >
+            <SendIcon className="h-3.5 w-3.5" />
+            {sendMut.isPending ? "Enviando…" : "Enviar"}
+          </button>
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Insumo sujeito à revisão integral do advogado responsável.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function partsToText(parts: unknown): string {
+  if (typeof parts === "string") return parts;
+  if (Array.isArray(parts)) {
+    return parts
+      .map((p: any) => (p && typeof p === "object" && p.type === "text" ? String(p.text ?? "") : ""))
+      .join("");
+  }
+  if (parts && typeof parts === "object" && (parts as any).type === "text") {
+    return String((parts as any).text ?? "");
+  }
+  return "";
+}
+
+function ChatBubble({
+  role,
+  text,
+  pending,
+}: {
+  role: string;
+  text: string;
+  pending?: boolean;
+}) {
+  const isUser = role === "user";
+  return (
+    <div className={`flex gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
+      {!isUser && (
+        <div className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/15 text-accent">
+          <BotIcon className="h-3.5 w-3.5" />
+        </div>
+      )}
+      <div
+        className={`max-w-[85%] rounded-sm border px-3 py-2 text-sm ${
+          isUser
+            ? "border-primary/30 bg-primary/5 text-foreground"
+            : "border-border bg-background text-foreground"
+        } ${pending ? "italic text-muted-foreground" : ""}`}
+      >
+        {isUser ? (
+          <p className="whitespace-pre-wrap">{text}</p>
+        ) : (
+          <div className="prose prose-sm max-w-none">
+            <ReactMarkdown>{text}</ReactMarkdown>
+          </div>
+        )}
+      </div>
+      {isUser && (
+        <div className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-secondary text-secondary-foreground">
+          <UserIcon className="h-3.5 w-3.5" />
+        </div>
+      )}
     </div>
   );
 }
