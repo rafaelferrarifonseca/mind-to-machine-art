@@ -9,6 +9,13 @@ export type StoredMessage = {
   parts: Json;
 };
 
+const AttachmentSchema = z.object({
+  path: z.string().min(1).max(500),
+  name: z.string().min(1).max(300),
+  mime: z.string().min(1).max(200),
+  size: z.number().int().nonnegative().max(25 * 1024 * 1024),
+});
+
 const CreateThreadSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   cliente: z.string().min(1).max(200).optional().nullable(),
@@ -21,6 +28,7 @@ const CreateThreadSchema = z.object({
   jurisdicao: z.string().max(200).optional().nullable(),
   premissas: z.string().max(2000).optional().nullable(),
   raw_input: z.string().max(60000).optional().nullable(),
+  attachments: z.array(AttachmentSchema).max(10).default([]),
 });
 
 export const createThread = createServerFn({ method: "POST" })
@@ -46,6 +54,7 @@ export const createThread = createServerFn({ method: "POST" })
         jurisdicao: data.jurisdicao ?? null,
         premissas: data.premissas ?? null,
         raw_input: data.raw_input ?? null,
+        attachments: data.attachments as unknown as Json,
         status: "em_tratamento",
       })
       .select()
@@ -55,7 +64,7 @@ export const createThread = createServerFn({ method: "POST" })
       user_id: userId,
       thread_id: row.id,
       action: "thread.created",
-      metadata: { area: data.area, cliente: data.cliente ?? null },
+      metadata: { area: data.area, cliente: data.cliente ?? null, attachments: data.attachments.length },
     });
     return row;
   });

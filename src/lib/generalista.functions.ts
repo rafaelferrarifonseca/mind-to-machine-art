@@ -27,11 +27,44 @@ function buildContext(thread: {
   ].join("\n");
 }
 
+type Attachment = { path: string; name: string; mime: string; size: number };
+
+async function buildAttachmentParts(
+  supabase: any,
+  attachments: Attachment[],
+): Promise<Array<{ type: "file"; data: string; mediaType: string; filename?: string } | { type: "image"; image: string }>> {
+  const parts: Array<any> = [];
+  for (const att of attachments) {
+    const { data: signed, error } = await supabase.storage
+      .from("thread-uploads")
+      .createSignedUrl(att.path, 60 * 30);
+    if (error || !signed?.signedUrl) continue;
+    const res = await fetch(signed.signedUrl);
+    if (!res.ok) continue;
+    const buf = new Uint8Array(await res.arrayBuffer());
+    const b64 = typeof Buffer !== "undefined"
+      ? Buffer.from(buf).toString("base64")
+      : btoa(String.fromCharCode(...buf));
+    if (att.mime.startsWith("image/")) {
+      parts.push({ type: "image", image: `data:${att.mime};base64,${b64}` });
+    } else {
+      parts.push({
+        type: "file",
+        data: `data:${att.mime};base64,${b64}`,
+        mediaType: att.mime,
+        filename: att.name,
+      });
+    }
+  }
+  return parts;
+}
+
 async function generateDossie(opts: {
   context: string;
   rawInput: string;
   feedback?: string;
   previousDossie?: Dossie | null;
+  attachmentParts?: Array<any>;
 }): Promise<Dossie> {
   const key = process.env.LOVABLE_API_KEY;
   if (!key) throw new Error("Missing LOVABLE_API_KEY");
@@ -45,21 +78,30 @@ async function generateDossie(opts: {
     ? `\n\n# AJUSTES SOLICITADOS PELO ADVOGADO\n${opts.feedback}\n\nIncorpore os ajustes acima ao dossiê. Mantenha o que continua válido.`
     : "";
 
-  const prompt = `${GENERALISTA_INSTRUCTIONS}
+  const textPrompt = `${GENERALISTA_INSTRUCTIONS}
 
 # CONTEXTO DA MATÉRIA
 ${opts.context}
 
 # MATERIAL BRUTO FORNECIDO PELO ADVOGADO
-${opts.rawInput || "(nenhum material textual fornecido)"}${previousPart}${feedbackPart}
+${opts.rawInput || "(nenhum material textual fornecido — verificar anexos)"}${previousPart}${feedbackPart}
 
-Devolva o dossiê estruturado conforme o schema. Não invente. Use "alertas" para registrar lacunas.`;
+Devolva o dossiê estruturado conforme o schema. Não invente. Use "alertas" para registrar lacunas. Considere também os documentos anexados a seguir.`;
 
-  const { object } = await generateObject({
-    model,
-    schema: DossieSchema,
-    prompt,
-  });
+  const attachmentParts = opts.attachmentParts ?? [];
+  const { object } =
+    attachmentParts.length > 0
+      ? await generateObject({
+          model,
+          schema: DossieSchema,
+          messages: [
+            {
+              role: "user",
+              content: [{ type: "text", text: textPrompt }, ...attachmentParts] as any,
+            },
+          ],
+        })
+      : await generateObject({ model, schema: DossieSchema, prompt: textPrompt });
   return object;
 }
 
@@ -79,9 +121,13 @@ export const runGeneralista = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!thread) throw new Error("Análise não encontrada");
 
+    const attachments = (thread.attachments as unknown as Attachment[]) ?? [];
+    const attachmentParts = await buildAttachmentParts(supabase, attachments);
+
     const dossie = await generateDossie({
       context: buildContext(thread),
       rawInput: thread.raw_input ?? "",
+      attachmentParts,
     });
 
     const { error: upErr } = await supabase
@@ -124,11 +170,15 @@ export const refineGeneralista = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!thread) throw new Error("Análise não encontrada");
 
+    const attachments = (thread.attachments as unknown as Attachment[]) ?? [];
+    const attachmentParts = await buildAttachmentParts(supabase, attachments);
+
     const dossie = await generateDossie({
       context: buildContext(thread),
       rawInput: thread.raw_input ?? "",
       previousDossie: (thread.dossie as unknown as Dossie | null) ?? null,
       feedback: data.feedback,
+      attachmentParts,
     });
 
     const { error: upErr } = await supabase
