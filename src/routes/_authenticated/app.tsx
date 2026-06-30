@@ -499,8 +499,10 @@ function NewThreadModal({
                 multiple
                 accept={ACCEPTED}
                 onChange={(e) => {
-                  handleFiles(e.target.files);
-                  e.currentTarget.value = "";
+                  const input = e.currentTarget;
+                  const files = input.files ? Array.from(input.files) : [];
+                  input.value = "";
+                  if (files.length) handleFiles(files);
                 }}
                 className="hidden"
               />
