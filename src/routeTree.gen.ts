@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as AuthenticatedAppThreadIdRouteImport } from './routes/_authenticated/app.$threadId'
 
@@ -29,21 +30,27 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
-  id: '/app/',
-  path: '/app/',
+const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAppRoute,
 } as any)
 const AuthenticatedAppThreadIdRoute =
   AuthenticatedAppThreadIdRouteImport.update({
-    id: '/app/$threadId',
-    path: '/app/$threadId',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/$threadId',
+    path: '/$threadId',
+    getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/app': typeof AuthenticatedAppRouteWithChildren
   '/app/$threadId': typeof AuthenticatedAppThreadIdRoute
   '/app/': typeof AuthenticatedAppIndexRoute
 }
@@ -58,12 +65,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/app/$threadId': typeof AuthenticatedAppThreadIdRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/app/$threadId' | '/app/'
+  fullPaths: '/' | '/auth' | '/app' | '/app/$threadId' | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/auth' | '/app/$threadId' | '/app'
   id:
@@ -71,6 +79,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/app'
     | '/_authenticated/app/$threadId'
     | '/_authenticated/app/'
   fileRoutesById: FileRoutesById
@@ -104,31 +113,49 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/app': {
+      id: '/_authenticated/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AuthenticatedAppRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/app/': {
       id: '/_authenticated/app/'
-      path: '/app'
+      path: '/'
       fullPath: '/app/'
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/$threadId': {
       id: '/_authenticated/app/$threadId'
-      path: '/app/$threadId'
+      path: '/$threadId'
       fullPath: '/app/$threadId'
       preLoaderRoute: typeof AuthenticatedAppThreadIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedAppRoute
     }
   }
 }
 
-interface AuthenticatedRouteRouteChildren {
+interface AuthenticatedAppRouteChildren {
   AuthenticatedAppThreadIdRoute: typeof AuthenticatedAppThreadIdRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
 }
 
-const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppThreadIdRoute: AuthenticatedAppThreadIdRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+}
+
+const AuthenticatedAppRouteWithChildren =
+  AuthenticatedAppRoute._addFileChildren(AuthenticatedAppRouteChildren)
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAppRoute: typeof AuthenticatedAppRouteWithChildren
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAppRoute: AuthenticatedAppRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
