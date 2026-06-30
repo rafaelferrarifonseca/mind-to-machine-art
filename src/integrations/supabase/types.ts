@@ -87,6 +87,7 @@ export type Database = {
       threads: {
         Row: {
           area: string
+          attachments: Json
           cliente: string | null
           created_at: string
           dossie: Json | null
@@ -106,6 +107,7 @@ export type Database = {
         }
         Insert: {
           area: string
+          attachments?: Json
           cliente?: string | null
           created_at?: string
           dossie?: Json | null
@@ -125,6 +127,7 @@ export type Database = {
         }
         Update: {
           area?: string
+          attachments?: Json
           cliente?: string | null
           created_at?: string
           dossie?: Json | null
