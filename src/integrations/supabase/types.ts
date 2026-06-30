@@ -87,45 +87,57 @@ export type Database = {
       threads: {
         Row: {
           area: string
+          cliente: string | null
           created_at: string
+          dossie: Json | null
           id: string
           jurisdicao: string | null
-          natureza: string
-          objetivo: string
-          polo: string
+          natureza: string | null
+          objetivo: string | null
+          polo: string | null
           premissas: string | null
-          publico: string
+          publico: string | null
+          raw_input: string | null
           sigilo: boolean
+          status: string
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
           area: string
+          cliente?: string | null
           created_at?: string
+          dossie?: Json | null
           id?: string
           jurisdicao?: string | null
-          natureza: string
-          objetivo: string
-          polo: string
+          natureza?: string | null
+          objetivo?: string | null
+          polo?: string | null
           premissas?: string | null
-          publico: string
+          publico?: string | null
+          raw_input?: string | null
           sigilo?: boolean
+          status?: string
           title?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           area?: string
+          cliente?: string | null
           created_at?: string
+          dossie?: Json | null
           id?: string
           jurisdicao?: string | null
-          natureza?: string
-          objetivo?: string
-          polo?: string
+          natureza?: string | null
+          objetivo?: string | null
+          polo?: string | null
           premissas?: string | null
-          publico?: string
+          publico?: string | null
+          raw_input?: string | null
           sigilo?: boolean
+          status?: string
           title?: string
           updated_at?: string
           user_id?: string
