@@ -1,50 +1,84 @@
 import { z } from "zod";
 
+const TextSchema = z.preprocess(
+  (value) => (value === null || value === undefined ? "" : String(value)),
+  z.string(),
+);
+
+const StringArraySchema = z.preprocess(
+  (value) => (Array.isArray(value) ? value : []),
+  z.array(TextSchema),
+);
+
+const RiskLevelSchema = z.preprocess((value) => {
+  const normalized = String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+  if (["alto", "alta", "grave", "elevado", "elevada", "high"].includes(normalized)) {
+    return "alto";
+  }
+  if (["baixo", "baixa", "leve", "reduzido", "reduzida", "low"].includes(normalized)) {
+    return "baixo";
+  }
+  return "medio";
+}, z.enum(["alto", "medio", "baixo"]));
+
+const PartSchema = z.preprocess(
+  (value) => (value && typeof value === "object" ? value : {}),
+  z.object({
+    nome: TextSchema,
+    polo: TextSchema.describe("autor, réu, terceiro, consulente, etc"),
+    observacao: TextSchema.optional(),
+  }),
+);
+
+const PedidoTeseSchema = z.preprocess(
+  (value) => (value && typeof value === "object" ? value : {}),
+  z.object({
+    titulo: TextSchema,
+    descricao: TextSchema,
+  }),
+);
+
+const LinhaTempoSchema = z.preprocess(
+  (value) => (value && typeof value === "object" ? value : {}),
+  z.object({
+    data: TextSchema.describe("data ou descrição temporal"),
+    evento: TextSchema,
+  }),
+);
+
+const RiscoSchema = z.preprocess(
+  (value) => (value && typeof value === "object" ? value : {}),
+  z.object({
+    nivel: RiskLevelSchema,
+    descricao: TextSchema,
+  }),
+);
+
 export const DossieSchema = z.object({
-  resumo: z.string().default("").describe("Resumo executivo do caso em 2 a 4 frases"),
-  fatos: z.string().default("").describe("Narrativa cronológica dos fatos relevantes, em markdown"),
+  resumo: TextSchema.default("").describe("Resumo executivo do caso em 2 a 4 frases"),
+  fatos: TextSchema.default("").describe("Narrativa cronológica dos fatos relevantes, em markdown"),
   partes: z
-    .array(
-      z.object({
-        nome: z.string(),
-        polo: z.string().describe("autor, réu, terceiro, consulente, etc"),
-        observacao: z.string().nullable().optional(),
-      }),
-    )
+    .preprocess((value) => (Array.isArray(value) ? value : []), z.array(PartSchema))
     .default([])
     .describe("Partes identificadas e seus polos"),
   pedidos_teses: z
-    .array(
-      z.object({
-        titulo: z.string(),
-        descricao: z.string(),
-      }),
-    )
+    .preprocess((value) => (Array.isArray(value) ? value : []), z.array(PedidoTeseSchema))
     .default([])
     .describe("Pedidos formulados e teses jurídicas iniciais"),
   linha_tempo: z
-    .array(
-      z.object({
-        data: z.string().describe("data ou descrição temporal"),
-        evento: z.string(),
-      }),
-    )
+    .preprocess((value) => (Array.isArray(value) ? value : []), z.array(LinhaTempoSchema))
     .default([])
     .describe("Movimentações ou eventos processuais relevantes em ordem"),
   riscos: z
-    .array(
-      z.object({
-        nivel: z
-          .string()
-          .transform((v) => v.toLowerCase().trim())
-          .pipe(z.enum(["alto", "medio", "baixo"])),
-        descricao: z.string(),
-      }),
-    )
+    .preprocess((value) => (Array.isArray(value) ? value : []), z.array(RiscoSchema))
     .default([])
     .describe("Riscos, fragilidades e pontos sensíveis"),
-  alertas: z
-    .array(z.string())
+  alertas: StringArraySchema
     .default([])
     .describe("Pontos de atenção: prazos, sigilo, lacunas informacionais"),
 });
